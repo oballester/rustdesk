@@ -1,0 +1,58 @@
+name: Build Windows Custom
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    env:
+      RENDEZVOUS_SERVER: ${{ secrets.RENDEZVOUS_SERVER }}
+      RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
+      VCPKG_ROOT: C:\vcpkg
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          architecture: x64
+
+      - name: Install LLVM / Clang
+        run: choco install llvm -y
+
+      - name: Setup vcpkg dependencies
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+          C:\vcpkg\bootstrap-vcpkg.bat
+          C:\vcpkg\vcpkg.exe install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
+
+      - name: Build RustDesk core library
+        run: |
+          cargo build --release --lib --features flutter
+
+      - name: Build Flutter Windows app
+        working-directory: flutter
+        run: |
+          flutter pub get
+          flutter build windows --release
+
+      - name: Package portable EXE
+        run: |
+          New-Item -ItemType Directory -Force -Path dist
+          Copy-Item -Path "flutter\build\windows\x64\runner\Release\*" -Destination "dist\" -Recurse
+          Rename-Item -Path "dist\rustdesk.exe" -NewName "Soporte-PopLogistic.exe"
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Soporte-PopLogistic-Windows
+          path: dist/
