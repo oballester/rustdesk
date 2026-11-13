@@ -120,7 +120,5 @@ jobs:
       - name: Patch flutter
         shell: bash
         run: |
-          FLUTTER_DIR="$(dirname "$(dirname "$(which flutter)")")"
-          cp .github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff "$FLUTTER_DIR"
-          cd "$FLUTTER_DIR"
-          if [[ "3
+          FLUTTER_DIR="/c/hostedtoolcache/windows/flutter/stable-${{ env.FLUTTER_VERSION }}-x64"
+          cp .github/patches/flutter_3.24.4_dropdown_menu_enableFilter.
