@@ -5,6 +5,7 @@
 #include <windows.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <iostream>
 
 #include "win32_desktop.h"
@@ -20,6 +21,32 @@ typedef int (*FUNC_RUSTDESK_IS_DISABLE_INSTALLATION)();
 const std::vector<std::string> parameters_white_list = {"--install", "--cm"};
 
 const wchar_t* getWindowClassName();
+
+static void CleanupAppDataDir(const wchar_t* env_var, const wchar_t* folder_name) {
+  wchar_t* val = nullptr;
+  size_t len = 0;
+  if (_wdupenv_s(&val, &len, env_var) == 0 && val != nullptr) {
+    std::error_code ec;
+    std::filesystem::path dir = std::filesystem::path(val) / folder_name;
+    std::filesystem::remove_all(dir, ec);
+    free(val);
+  }
+}
+
+static void CleanupPreviousAppData(const std::vector<std::string>& args) {
+  for (const auto& arg : args) {
+    if (arg.rfind("--", 0) == 0) {
+      return;
+    }
+  }
+  if (::FindWindowW(getWindowClassName(), L"Soporte PopLogistic") != NULL) {
+    return;
+  }
+  CleanupAppDataDir(L"APPDATA", L"RustDesk");
+  CleanupAppDataDir(L"LOCALAPPDATA", L"RustDesk");
+  CleanupAppDataDir(L"APPDATA", L"Soporte PopLogistic");
+  CleanupAppDataDir(L"LOCALAPPDATA", L"Soporte PopLogistic");
+}
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command)
@@ -53,6 +80,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   for (auto& argument : command_line_arguments) {
     argument.erase(argument.find_last_not_of(" \n\r\t"));
   }
+
+  CleanupPreviousAppData(command_line_arguments);
 
   int args_len = 0;
   char** c_args = rustdesk_core_main(&args_len);
