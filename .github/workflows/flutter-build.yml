@@ -12,6 +12,9 @@ on:
       publish-update-metadata:
         type: boolean
         default: false
+      client-only:
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       upload-artifact:
@@ -21,6 +24,9 @@ on:
         type: string
         default: "nightly"
       publish-update-metadata:
+        type: boolean
+        default: false
+      client-only:
         type: boolean
         default: false
 
@@ -161,6 +167,8 @@ jobs:
 
       - name: Configure default server and public key in hbb_common
         shell: bash
+        env:
+          CLIENT_ONLY: ${{ inputs.client-only }}
         run: |
           python3 -c "
           import os, pathlib
@@ -168,6 +176,11 @@ jobs:
           s = p.read_text(encoding='utf-8')
           s = s.replace('\"rs-ny.rustdesk.com\"', '\"' + os.environ['RENDEZVOUS_SERVER'] + '\"')
           s = s.replace('\"OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=\"', '\"' + os.environ['RS_PUB_KEY'] + '\"')
+          if os.environ.get('CLIENT_ONLY') == 'true':
+              old = 'pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = Default::default();'
+              new = 'pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([(\"conn-type\".to_owned(), \"incoming\".to_owned()), (\"disable-settings\".to_owned(), \"Y\".to_owned()), (\"disable-installation\".to_owned(), \"Y\".to_owned())]));'
+              assert old in s, 'HARD_SETTINGS pattern not found'
+              s = s.replace(old, new, 1)
           p.write_text(s, encoding='utf-8')
           "
 
@@ -226,7 +239,11 @@ jobs:
           python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/rustdesk.exe
           popd
           mkdir -p ./SignOutput
-          mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/Soporte-PopLogistic-${{ env.VERSION }}-x86_64.exe
+          if [ "${{ inputs.client-only }}" = "true" ]; then
+            mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/Soporte-PopLogistic-Cliente-${{ env.VERSION }}-x86_64.exe
+          else
+            mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/Soporte-PopLogistic-${{ env.VERSION }}-x86_64.exe
+          fi
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
@@ -240,10 +257,14 @@ jobs:
           nuget restore msi.sln
           msbuild msi.sln -p:Configuration=Release -p:Platform=x64 /p:TargetVersion=Windows10
           $msi = Get-ChildItem ./Package/bin/*/Release/en-us/Package.msi | Select-Object -First 1
-          mv $msi.FullName ../../SignOutput/Soporte-PopLogistic-${{ env.VERSION }}-x86_64.msi
+          if ("${{ inputs.client-only }}" -eq "true") {
+            mv $msi.FullName ../../SignOutput/Soporte-PopLogistic-Cliente-${{ env.VERSION }}-x86_64.msi
+          } else {
+            mv $msi.FullName ../../SignOutput/Soporte-PopLogistic-${{ env.VERSION }}-x86_64.msi
+          }
 
       - name: Upload Final Windows EXE and MSI
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: Soporte-PopLogistic-Windows-Final
+          name: ${{ inputs.client-only && 'Soporte-PopLogistic-Cliente-Windows-Final' || 'Soporte-PopLogistic-Windows-Final' }}
           path: ./SignOutput/
