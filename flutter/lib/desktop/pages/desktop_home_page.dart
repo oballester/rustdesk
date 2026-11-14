@@ -220,7 +220,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                                   ?.color
                                   ?.withOpacity(0.5)),
                         ).marginOnly(top: 5),
-                        buildPopupMenu(context)
+                        if (!bind.isIncomingOnly()) buildPopupMenu(context)
                       ],
                     ),
                   ),
@@ -388,6 +388,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
 
   buildTip(BuildContext context) {
     final isOutgoingOnly = bind.isOutgoingOnly();
+    final isIncomingOnly = bind.isIncomingOnly();
     return Padding(
       padding:
           const EdgeInsets.only(left: 20.0, right: 16, top: 16.0, bottom: 5),
@@ -401,7 +402,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    translate("Your Desktop"),
+                    isIncomingOnly
+                        ? 'Soporte PopLogistic'
+                        : translate("Your Desktop"),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -412,7 +415,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           ),
           if (!isOutgoingOnly)
             Text(
-              translate("desk_tip"),
+              isIncomingOnly
+                  ? 'Comparte este ID y contraseña con el técnico para recibir asistencia.'
+                  : translate("desk_tip"),
               overflow: TextOverflow.clip,
               style: Theme.of(context).textTheme.bodySmall,
             ),
