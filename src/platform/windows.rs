@@ -1444,7 +1444,7 @@ fn get_default_install_path() -> String {
             pf = tmp;
         }
     }
-    format!("{}\\Soporte PopLogistic", pf)
+    format!("{}\\Soporte_PopLogistic", pf)
 }
 
 pub fn check_update_broker_process() -> ResultType<()> {
