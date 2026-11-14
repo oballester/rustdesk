@@ -43,9 +43,7 @@ static void CleanupPreviousAppData(const std::vector<std::string>& args) {
     return;
   }
   CleanupAppDataDir(L"APPDATA", L"RustDesk");
-  CleanupAppDataDir(L"LOCALAPPDATA", L"RustDesk");
   CleanupAppDataDir(L"APPDATA", L"Soporte PopLogistic");
-  CleanupAppDataDir(L"LOCALAPPDATA", L"Soporte PopLogistic");
 }
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
