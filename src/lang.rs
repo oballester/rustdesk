@@ -297,6 +297,11 @@ pub fn translate_locale(name: String, locale: &str) -> String {
                     }
                 }
             }
+        } else if s.contains("RustDesk") {
+            s = s.replace("RustDesk", "Soporte PopLogistic");
+        }
+        if s.contains("rustdesk.com") {
+            s = s.replace("rustdesk.com", "support.poplogistic.com");
         }
         s
     };
